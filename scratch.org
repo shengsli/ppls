@@ -1,0 +1,46 @@
+#+title: ppls cw2 parallel prefix sum: scratch
+#+author: sheng li
+#+date: <2019-03-04 Mon 14:27>
+
+* overview
+- each thread takes responsibility for a roughly equal-sized chunk of thesequence
+- 3 phases
+- all updates are made in place
+* 3 phases:
+** phase 1
+- only the responsible thread for a chunk will write new values to its chunk.
+- every thread performs a *prefix sum sequentially* across its chunk of data, in place.
+** phase 2
+- only thread 0 is active. 
+- thread 0 makes updates at various places in the whole array.
+- thread 0 performs a *sequential prefix sum* using just the _highest indexed position_ from each chunk, in place. 
+- other threads simply wait.
+** phase 3
+- only the responsible thread for a chunk will write new values to its chunk.
+- every thread except thread 0 adds the final value from the preceding chunk into every value in its own chunk, except the last position, in place.
+- the last position already has its correct value after phase 2.
+# questions
+- what is sequential prefix sum? what's the algorithm? how to implement it?
+- what is the highest position?
+* deliverables
+- code
+- writing: explanation
+* args
+| NITEMS   | size of array               |
+| NTHREADS | number of threads           |
+| SHOWDATA | (display arrays or not) 1/0 |
+* task
+- implement ~parallelprefixsum~
+- criteria:
+  1) create and run ~NTHREADS~ threads
+  2) work for any ~NITEMS~ >= ~NTHREADS~
+  3) roughly equal chunk size: in a sense that at least ~NITEMS/NTHREADS~
+	 - surplus items: handle as i wish
+       - possible solutions: assign to the final chunk
+* multiple argument threads
+* writing
+- half a page
+- how i create threads
+- how, where and why i synchronized threads
+- other interesting features of my implementation
+- written as a multi-line comment in source code
