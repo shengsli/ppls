@@ -47,10 +47,28 @@ void sequentialprefixsum (int *data, int n) {
   }
 }
 
+// MY THREAD CODE
+void *thread_sequentialprefixsum (void *args) {
+  int *data;
+  int n;
+
+  // retrieve the arguments
+  a = ((arg_pack *)args)->myarg1;
+  b = ((arg_pack *)args)->myarg2;
+  c = ((arg_pack *)args)->myarg3;
+
+  // use them
+  printf ("Hello from thread %d, my other arguments were %d and %d.\n", a, b, c);
+  return NULL;
+}
 
 // YOU MUST WRITE THIS FUNCTION AND ANY ADDITIONAL FUNCTIONS YOU NEED
 void parallelprefixsum (int *data, int n) {
-  printf("call parallel prefix sum");
+    printf("call parallel prefix sum");
+	pthread_t thread[P];
+	int i;
+	for (i=0; i<NTHREADS, I++)
+	  pthread_create(&thread[i], NULL, sequentialprefixsum, NULL);
 }
 
 
