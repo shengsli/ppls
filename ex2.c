@@ -1,3 +1,22 @@
+/*
+- In the first phase, parent thread (thread 0) initializes each child thread id, calculate its chunk 
+size and prepare items which will be allocated to each child thread. Thread 0 calls ~pthread_create~ 
+to create threads, passes start routine and arguments (thread id, chunk size, items). 
+- In the second phase, I used ~pthread_barrier~ to synchronize all the threads before thread 0 start 
+to perform sequential prefix sum at highest indices. I put this barrier before thread 0 start prefix 
+sum at highest indices, and I put this barrier right after child threads finish the first phase. 
+Sequential prefix sum at highest indices is implemented in ~parent_sequentialprefixsum()~. Thread 1 
+has finished the calculation on the first chunk. Thread 0 only needs to calculate from the second 
+chunk. The last item of each chunk adds the value of last item in the previous chunk to itself. Other 
+threads wait for thread 0 until it finishes this highest-indexed prefix sum. To achieve this, I used 
+a second barrier after the code block of this highest-indexed prefix sum in thread 0, and I put this 
+second barrier right after the first barrier, before child threads do any further computation. 
+- In the third phase, each child thread does local updates to its own data chunk. The last item of 
+each chunk has completed its calculation in phase 2. In this phase, each item (except the last one) 
+add the value of last item in the previous chunk to itself. At this point, all threads finish 
+calculation and terminate by return. Thread 0 joins all threads. 
+*/
+
 // PPLS Exercise 2 Starter File
 //
 // See the exercise sheet for details
@@ -72,19 +91,12 @@ void *thread_sequentialprefixsum (void *args) {
   sequentialprefixsum(data, n);
   pthread_barrier_wait(&barrier);
   pthread_barrier_wait(&barrier2);
-  printf("this msg should show up after phase 2.\n");
   int chunk_size = n / NTHREADS;
   // phase 3: local updates
   if (tid == 0) return NULL;
   int i;
-  //printf("%d", tid); showdata("***thread debug", data, n);
   for (i=0; i<n-1; ++i)
-  {
-	printf("%d -> ",*(data+i));
   	*(data+i) += *(data-1);
-	printf("%d\n",*(data+i));
-  }
-  showdata("***thread debug", data, n);
   return NULL;
 }
 
@@ -93,22 +105,14 @@ void *parent_sequentialprefixsum (int *data, int n) {
   // perform NTHREADS-1 times sum, from 2nd chunk to the last one
   int chunk_size = n / NTHREADS; // minimum # of items
   int i;
-  for (i=1; i<NTHREADS-1; i++) { // 2nd chunk to 2nd last chunk
-	/* printf("data[%d] = %d + %d\n", */
-	/* 	   (i+1)*chunk_size-1, data[(i+1)*chunk_size-1], data[i*chunk_size-1]); */
+  for (i=1; i<NTHREADS-1; i++) // 2nd chunk to 2nd last chunk
     data[(i+1)*chunk_size-1] = data[(i+1)*chunk_size-1] + data[i*chunk_size-1];
-	//showdata("***debug", data, NITEMS);
-  }
-  /* printf("data[%d] = %d + %d\n", */
-  /* 		 NITEMS-1, data[NITEMS-1], data[(NTHREADS-1)*chunk_size-1]); */
   data[NITEMS-1] += data[(NTHREADS-1)*chunk_size-1];
-  //showdata("***debug", data, NITEMS);
   return NULL;
 }
 
 // YOU MUST WRITE THIS FUNCTION AND ANY ADDITIONAL FUNCTIONS YOU NEED
 void parallelprefixsum (int *data, int n) {
-  printf("call parallel prefix sum\n");
   pthread_t *threads;
   arg_pack *threadargs;
   int i;
@@ -118,7 +122,6 @@ void parallelprefixsum (int *data, int n) {
 	printf("fail to init barrier\n");
 	return;
   }
-  // phase 2: thread 0 performs sequential prefix sum to the last item of each chunk
   if (pthread_barrier_init(&barrier2, NULL, NTHREADS+1)) { // create a barrier
 	printf("fail to init barrier2\n");
 	return;
@@ -135,21 +138,19 @@ void parallelprefixsum (int *data, int n) {
   threadargs[NTHREADS-1].n += n - chunk_size * NTHREADS; // give rest items to the last thread
   for (i=0; i<NTHREADS; i++) // create threads
 	pthread_create(&threads[i], NULL, thread_sequentialprefixsum, (void *) &threadargs[i]);
-  pthread_barrier_wait(&barrier); // snyc
-  printf("synchronization is done.\n");
+  pthread_barrier_wait(&barrier); // snychronize before phase 2
   pthread_barrier_destroy(&barrier);
   
+  // phase 2: thread 0 performs sequential prefix sum to the last item of each chunk
   parent_sequentialprefixsum(data, n);
-  showdata("***debug: phase 2 done: ", data, NITEMS);
   pthread_barrier_wait(&barrier2);
   pthread_barrier_destroy(&barrier2);
   
-  // phase 3: child threads do local update
+  // phase 3: child threads do local update, see thread_sequentialprefixsum()
 
   // join and exit
   for (i=0; i<NTHREADS; i++)
   	pthread_join(threads[i], NULL);
-  showdata("***debug", data, NITEMS);
 }
 
 

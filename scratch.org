@@ -40,6 +40,7 @@
 * multiple argument threads
 * writing
 - half a page
+- implementation strategy
 - how i create threads
 - how, where and why i synchronized threads
 - other interesting features of my implementation

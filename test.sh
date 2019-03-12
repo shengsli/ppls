@@ -1,8 +1,10 @@
 #!/bin/bash
-test_num=10
+test_num="$1"
+item_num="$2"
+thread_num="$3"
 succ_num=0
 for i in `seq 1 $test_num`; do
-    gcc -o ex2 ex2.c -DNITEMS=10 -DNTHREADS=4 -DSHOWDATA=1 -lpthread
+    gcc -o ex2 ex2.c -DNITEMS=$item_num -DNTHREADS=$thread_num -DSHOWDATA=1 -lpthread
     count=`./ex2 | grep -c "Well done"`
 	((succ_num++))
 	if [[ $count = 0 ]]; then
