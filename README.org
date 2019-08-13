@@ -1,0 +1,4 @@
+#+title: PPLS Exercise 2: Parallel Prefix Sum
+#+author: 
+#+date: 
+- https://www.inf.ed.ac.uk/teaching/courses/ppls/ex2.pdf
